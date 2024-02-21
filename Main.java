@@ -336,16 +336,60 @@ public class Main
         // Exercise
         {
             // 0) Describe an XML with DTD for storing a (Hash)Map of key-value entries:
-            //    * keys with any c ontent and a boolean attribute Unique (as many keys as required)
-            //    * values with any content and no attributes
-            //    Fill with exemplary data: Pi=3.1415926535, E=2.718281828, and C=299792458
-            //    How are optional tags/elements vs attributes defined?
+            /*
+            * keys with any c ontent and a boolean attribute Unique (as many keys as required)
+            * values with any content and no attributes
+            * Fill with exemplary data: Pi=3.1415926535, E=2.718281828, and C=299792458
+
+            <!DOCTYPE hashmap [
+                    <!ELEMENT hashmap (entry*)>
+                    <!ELEMENT entry (key, value)>
+                    <!ATTLIST key Unique (true|false) "true">
+                    <!ELEMENT key (#PCDATA)>
+                    <!ELEMENT value (#PCDATA)>
+            ]>
+            <hashmap>
+                <entry>
+                    <key Unique="true">Pi</key>
+                    <value>3.1415926535</value>
+                </entry>
+                <entry>
+                    <key Unique="true">E</key>
+                    <value>2.718281828</value>
+                </entry>
+                <entry>
+                    <key Unique="true">C</key>
+                    <value>299792458</value>
+                </entry>
+            </hashmap>
+
+             Wie sind Optional tagt/elements gegen attribute definiert
+             * Tags/Elemente werden mithilfe des ? erzeugt. Sie zeigen an, das Elemente
+                Null oder einmal im Dokument erscheinen
+             * Indem Standardwerte in der Attributdefinition angegeben werden,
+                Diese Standardwerte werden als optional gesehen und können weggelassen werden
+             */
+
             // 1) Process all entries without XPath and construct/return a String output like
             //    {Pi=3.1415926535 (true), E=2.718281828, C=299792458}
+            /*
+                mit getRoot/getChild wie siehe oben
+             */
             // 2) Access all keys Pi, E, C using XPath and output like {Pi, E, C};
             //    Access only key attributes using XPath and output like {true}
             //    (Hint: Use a boolean for calling the access method with false for keys
             //     and true for attributes)
+            /*
+            XPathExpression<Attribute> attributeExpression = XPathFactory.instance().compile(
+                        "/hashmap/entry/key/@Unique",
+                            Filters.attribute());
+            List<Attribute> attributes = attributeExpression.evaluate(document);
+
+            // Print key attributes
+            for (Attribute attribute : attributes) {
+                System.out.print(attribute.getValue() + ", ");
+            }
+             */
             // 3) Transform the document to a HTML representation (without ""):
             //    "
             //      Key-Value Structure:
@@ -353,6 +397,22 @@ public class Main
             //      Entry: [ E = 2.718281828 ]
             //      Entry: [ C = 299792458 ]
             //    "
+            /*
+            gleiche Methode wie oben + ein neues XSLT:
+            private static String createXSLT() {
+
+            return "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\n" +
+                  <xsl:template match=\"/\">\n" +
+                    <html>\n" +
+                      <body>\n" +
+                        <p>Key-Value Structure:</p>\n" +
+                        <!-- Add your XSLT transformation logic here -->\n" +
+                      </body>\n" +
+                    </html>\n" +
+                  </xsl:template>\n" +
+                </xsl:stylesheet>";
+    }
+             */
         }
     }
 }
