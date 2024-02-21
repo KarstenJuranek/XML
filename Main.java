@@ -22,8 +22,6 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 
-// Neben dem jdom-2.0.6.1.jar muss aus dem dortigen 'lib'-Vereichnis
-// auch jaxen-1.2.0.jar und xercesimpl.jar als Library eingebunden sein
 public class Main
 {
     static String format(Document Doc)
@@ -31,15 +29,17 @@ public class Main
         XMLOutputter Out = new XMLOutputter();
         return Out.outputString(Doc);
     }
-
-    // ### Example ###
-
     // 0.1) Create examplary XML data
     static String createXML()
     {
+        /* Verschiedene Versionen bieten andere Zeichenpaletten
+        In XML 1.0 sind nur bestimmte Zeichencodierungen wie UTF-8,
+        UTF-16 und ISO-8859-1 erlaubt. XML 1.1 ermöglicht eine breitere Palette von
+        Zeichencodierungen und erlaubt auch den Gebrauch von Nicht-Unicode-Codierungen.
+         */
         return
             """
-            <?xml version="1.0"?>
+            <?xml version="1.0" encoding="UTF-8"?>
             <!-- cf. Ullenboom ³2018: 722 "Java SE9 Standard-Bibliothek" -->
             <!DOCTYPE party
             [
@@ -68,6 +68,14 @@ public class Main
             """;
     }
     // 0.2) Create exemplary XSD data (not used here)
+
+    /*
+    Alternative zu DTD der Doctype oben
+    Anstelle des DOCTYPES
+    <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+        <!-- Definitionen für party, guest, dateType und stateType -->
+    </xsd:schema>
+     */
     static String createXSD()
     {
         return
@@ -153,181 +161,182 @@ public class Main
             </xsl:stylesheet>
             """;
     }
-
     // 1) Parse XML plain text to represented/interpreted document
     static Document parse(String XML)
     {
+        /*
+        verschiedene Parser
+        Dom Parser      Parsed ein Dokument, indem es das Ganze Dokument lädt(auch den Tree)
+        SAX Parser      -"- on event based triggers. Lädt nicht das ganze Doc in den Memory
+        JDOM Parser     -"- gleiche wie DOM nur auf einen leichteren Weg
+        StAX Parser     -"- effizienter als SAX ansosnten ähnlich
+        XPath Parser    -"- ein Dokument based on expressions und anhand der Verwendung von XSLT
+        DOM41 Parser    Java lib. XML, XPath, and XSLT using Java Collections Framework
+         */
         System.out.println("\n\r=== Parsing ===");
-
         Document Doc = null;
-
         try
         {
+            //Parsed das XML Doc und speichert das in einer variable ab
             SAXBuilder Bldr = new SAXBuilder(XMLReaders.DTDVALIDATING); // *)
             Doc = Bldr.build(new StringReader(XML));
             // *) Here: validating by a DTD;
             //    Alternative: XML schema file (cf. 0.2 above) => very cumbersome to validate!
 
+            // Inhalte des geparsten Docs werden extrahiert und in Type gespeichert
             DocType Type = Doc.getDocType();
             System.out.println(Type);
             //System.out.println();
         }
         catch (JDOMException | IOException E)
         { System.out.println(E.getMessage()); }
-
         return Doc;
     }
-
     // 2) Process document
     static void process(Document Doc)
     {
         System.out.println("\n\r=== Processing ===");
-
-        // Get root element
+        // Abrufen des Wurzelelements/Startelements (Startpunkt)
         Element Root = Doc.getRootElement();
-        System.out.println(Root);       // start point for further processing
-        System.out.println();
+        System.out.println(Root+"\n");
 
-        // Get child elements incl. attributes (guests)
-        Element Guest = Root.getChild("guest");     // only 1st guest
-        List<Element> Guests = Root.getChildren();  // all guests
-        System.out.println(Guest+", "+Guests);
-        System.out.println();
+        //Abrufen nur eines Elements (names des Elements)
+        Element Guest = Root.getChild("guest");
+        //Abrufen der Liste an gespeicherten Elementen
+        List<Element> Guests = Root.getChildren();
+        System.out.println(Guest+", "+Guests+"\n");
 
-        for (Element Guezt : Guests)            // attributes of a guest (name)
-        {
-            Attribute Attr = Guezt.getAttribute("name");    // entire attribute
-            System.out.println(Attr+": "+Attr.getValue());          // value of an attribute
+        //Weitere Modifikation/Ausgabe
+        for (Element guest : Guests) {
+            Attribute nameAttr = guest.getAttribute("name");
+            // >Ausgabe [Attribute: name="Albert Einstein"]: Albert Einstein
+            System.out.println(nameAttr + ": " + nameAttr.getValue() + "\n");
         }
-        System.out.println();
-
         // Child elements of all guests
-        for (Element Guezt : Guests)
+        for (Element guest : Guests)
         {
-            List<Element> Drinks = Guezt.getChildren("drink"); // drinks of a guest
-            System.out.print(Guezt+": ");
-            for (Element Drink : Drinks)                    // get contents of drink tags
-                System.out.print(Drink.getText()+"\t");
-            System.out.println();
+            List<Element> Drinks = guest.getChildren("drink"); // drinks of a guest
+            // Ausgabe der Guests
+            System.out.print(guest+": ");
 
-            Element State = Guezt.getChild("state");        // state of a guest (1 tag)
-            if (State != null)                              // null if no state tag
-                for (Attribute Attr : State.getAttributes())   // read state attributes
-                    System.out.println(Attr+": "+Attr.getName()+"="+Attr.getValue());
-            //System.out.println();
-        }
-    }
+            // Abrufen der Drinks (Inhalte)
+            for (Element Drink : Drinks)
+                System.out.println(Drink.getText()+"\t");
 
+            // Abrufen der States single & sober
+            Element State = guest.getChild("state");
+            if (State != null)   // null if no state tag
+                for (Attribute boolean_sober : State.getAttributes())   // read state attributes
+                    System.out.println(boolean_sober+": "+boolean_sober.getName()+"="+boolean_sober.getValue());
+        } }
     // 3) Modify document
     static void modify(Document Doc)
     {
         System.out.println("\n\r=== Modification ===");
-
-        // Get root element
+        // Abrufen des Root Elements
         Element Root = Doc.getRootElement();
 
-        // Change existing element (content/text or attribute)
+        // Zugreifen auf den Root (Werte verändern)
         Element Guest = Root.getChild("guest");
+        // Namensänderung
         Guest.setAttribute("name", "Alberto Einstein");
+        // Zugreifen auf das Kindelement "drink"
         Element Drink = Guest.getChild("drink");
-        Drink.setText("coke");              // wine => coke
+        // Änderung des Textes wine => coke
+        Drink.setText("coke");
+        // Zugreifen auf ein neues Kindelement
         Element State = Guest.getChild("state");
+        // Änderung des boolschen Werts
         State.setAttribute("sober", "false");
 
-        // Add new element with attributes
+        // Add
+        //Zugreifen auf den Root
         List<Element> Guests = Root.getChildren();
+        // Abrufen des dritten Elements von Guest
         Guest = Guests.get(2);
+        // Hinzufügen von neuen Elementen und deren Attribute
         State = new Element("state");
         State.setAttributes(List.of(new Attribute("single", "true"),
                                     new Attribute("sober", "false")));
         Guest.addContent(State);
 
         // Add another guest with a drink
-        Element Guezt = new Element("guest");
-        Guezt.setAttribute("name", "Albertum Einsteinium");
-        Element Drynk = new Element("drink");
-        Drynk.setText("tea");
-        Guezt.addContent(Drynk);
-        Root.addContent(Guezt);
-
+        // Hinzufügen eines neuen Gastes kein Root notwendig, da nicht spezifisch
+        // an eine Stelle gesprungen werden muss
+        Element guest = new Element("guest");
+        // Deklarieren des neuen Guests und einfügen der Attribute
+        guest.setAttribute("name", "Albertum Einsteinium");
+        Element drink = new Element("drink");
+        drink.setText("tea");
+        guest.addContent(drink);
+        Root.addContent(guest);
+        // Ausgabe mit Methode der modifizierung
         System.out.println(format(Doc));
     }
-
     // 4) Access document via paths
     static void access(Document Doc)
     {
         System.out.println("\n\r=== Accessing ===");
-
         // Access party guest names
+        // Extrahieren aller Gäste einer Liste
         XPathExpression<Object> XPath1 = XPathFactory.instance().compile("/party/guest/@name");
+        // Anwenden der gefundenen Namen
         List<Object> Names = XPath1.evaluate(Doc);   // file system notation
         System.out.println(Names);
 
         // Access drinks of guests
         XPathExpression<Element> XPath2 = XPathFactory.instance().compile
             ("/party/guest/drink", Filters.element());
+        //Andere Elemente wie kommentare oder Textknoten werden ignoriert
         for (Element Elem : XPath2.evaluate(Doc))
             System.out.print(Elem.getValue()+" ");
         System.out.println();
-
-        // ... and many more
     }
-
     // 5) Transform document via XSLT
-    static void transform(Document Doc)
+    static void transform(Document Doc) //XSLT anwenden
     {
         System.out.println("\n\r=== Transformation ===");
-
+        // Erstellen des Source Objekts, das transformiert werden soll
         Source XML = new JDOMSource(Doc);
+        // Ergebnis, welches das transformierte Doc übernimmt
         JDOMResult HTML = new JDOMResult();
-
         try
         {
+            //Verweisen des erstellten Stylesheets auf eine Variable
             String XSLT = createXSLT();
-            Transformer Trans = TransformerFactory.newInstance().newTransformer
+            // Durchführen der Transformation des Dokuments
+            Transformer trans = TransformerFactory.newInstance().newTransformer
                 (new StreamSource(new StringReader(XSLT)));
-            Trans.transform(XML, HTML);
-
+            // applyen der Änderung
+            trans.transform(XML, HTML);
             System.out.println(format(HTML.getDocument()));
         }
         catch (TransformerException E)
         { System.out.println(E.getMessage()); }
     }
-
     // ### Main ###
     public static void main(String[] args)
     {
         Document Doc;
-
-        // Example
         {
-            System.out.println("#######");
-            System.out.println("Example");
-            System.out.println("#######");
-
-            // 0) Create XML example data
+            // 0) Erstellung des XML Docs
             String XML = createXML();
-
-            // 1) Parse XML file
+            // 1) Parsing des XML Files
             Doc = parse(XML);
-
-            // 2) Process elements/attributes/data
+            // 2) Process elements/attributes/data Abrufen der Daten
             process(Doc);
-
-            // 3) Change document
+            // 3) Dokument anpassen/ändern/ergänzen
             modify(Doc);
-
-            // 4) Access document by XPath
+            // 4) Führt verschiedene Zugriffsoperationen aus
             access(Doc);
-
-            // 5) Transform document by XSLT
+            // 5) Transformieren des Dokuments mithilfe eines XSLT
             transform(Doc);
         }
 
         // Exercise
         {
             // 0) Describe an XML with DTD for storing a (Hash)Map of key-value entries:
-            //    * keys with any content and a boolean attribute Unique (as many keys as required)
+            //    * keys with any c ontent and a boolean attribute Unique (as many keys as required)
             //    * values with any content and no attributes
             //    Fill with exemplary data: Pi=3.1415926535, E=2.718281828, and C=299792458
             //    How are optional tags/elements vs attributes defined?
